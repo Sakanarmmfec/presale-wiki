@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.env
+*.json
+!render.yaml
+token.json
+client_secret.json
+.DS_Store

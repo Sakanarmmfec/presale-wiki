@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Presale Wiki</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #1a1a1a; min-height: 100vh; }
+  header { background: #fff; border-bottom: 1px solid #e5e5e5; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 18px; font-weight: 600; }
+  header span { font-size: 13px; color: #888; }
+  .tabs { display: flex; gap: 0; background: #fff; border-bottom: 1px solid #e5e5e5; padding: 0 24px; }
+  .tab { padding: 12px 20px; font-size: 14px; cursor: pointer; border-bottom: 2px solid transparent; color: #666; }
+  .tab.active { border-bottom-color: #4f46e5; color: #4f46e5; font-weight: 500; }
+  .panel { display: none; padding: 24px; max-width: 760px; margin: 0 auto; }
+  .panel.active { display: block; }
+  .card { background: #fff; border-radius: 10px; border: 1px solid #e5e5e5; padding: 24px; margin-bottom: 16px; }
+  label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: #444; }
+  input[type=text], textarea, select {
+    width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px;
+    font-size: 14px; font-family: inherit; outline: none; transition: border-color .15s;
+  }
+  input[type=text]:focus, textarea:focus { border-color: #4f46e5; }
+  textarea { resize: vertical; min-height: 120px; }
+  .drop-zone {
+    border: 2px dashed #ddd; border-radius: 10px; padding: 32px;
+    text-align: center; cursor: pointer; transition: all .15s; color: #888; font-size: 14px;
+  }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: #4f46e5; background: #f5f3ff; color: #4f46e5; }
+  .drop-zone .filename { margin-top: 8px; font-weight: 500; color: #4f46e5; }
+  button {
+    background: #4f46e5; color: #fff; border: none; border-radius: 8px;
+    padding: 10px 20px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background .15s;
+  }
+  button:hover { background: #4338ca; }
+  button:disabled { background: #aaa; cursor: not-allowed; }
+  button.secondary { background: #fff; color: #444; border: 1px solid #ddd; }
+  button.secondary:hover { background: #f5f5f5; }
+  .row { display: flex; gap: 12px; margin-top: 16px; align-items: flex-start; }
+  .msg { font-size: 13px; padding: 10px 14px; border-radius: 8px; margin-top: 12px; }
+  .msg.success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+  .msg.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+  .msg.info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+  .chat-messages { min-height: 200px; margin-bottom: 16px; }
+  .bubble { margin-bottom: 16px; }
+  .bubble.user .text { background: #4f46e5; color: #fff; border-radius: 10px 10px 2px 10px; padding: 12px 16px; display: inline-block; max-width: 90%; font-size: 14px; }
+  .bubble.user { text-align: right; }
+  .bubble.assistant .text { background: #fff; border: 1px solid #e5e5e5; border-radius: 2px 10px 10px 10px; padding: 12px 16px; display: inline-block; max-width: 90%; font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+  .sources { margin-top: 6px; font-size: 12px; color: #888; }
+  .sources span { background: #f3f4f6; border-radius: 4px; padding: 2px 6px; margin-right: 4px; }
+  .chat-input-row { display: flex; gap: 10px; }
+  .chat-input-row input { flex: 1; }
+  .filter-row { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; font-size: 13px; color: #666; }
+  .filter-row input { max-width: 180px; }
+  .ingest-result { font-size: 13px; }
+  .ingest-line { padding: 3px 0; font-size: 13px; font-family: monospace; white-space: pre-wrap; }
+  .ingest-result .item { padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 500; }
+  .badge.ok { background: #dcfce7; color: #166534; }
+  .badge.error { background: #fee2e2; color: #991b1b; }
+  .thinking { color: #aaa; font-size: 13px; font-style: italic; }
+</style>
+</head>
+<body>
+<header>
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+  </svg>
+  <h1>Presale Wiki</h1>
+  <span>powered by LLM</span>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('upload')">อัพโหลด Note</div>
+  <div class="tab" onclick="switchTab('ingest')">ประมวลผล Inbox</div>
+  <div class="tab" onclick="switchTab('chat')">ถามตอบ</div>
+</div>
+
+<!-- UPLOAD TAB -->
+<div id="tab-upload" class="panel active">
+  <div class="card">
+    <label>ชื่อผู้เขียน (Author) *</label>
+    <input type="text" id="author" placeholder="เช่น สมชาย, มาลี" style="margin-bottom:16px">
+    <label>ไฟล์ Note (.txt หรือ .md)</label>
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <div>คลิกหรือลากไฟล์มาวางที่นี่</div>
+      <div class="filename" id="file-name"></div>
+    </div>
+    <input type="file" id="file-input" accept=".txt,.md" style="display:none">
+    <div class="row">
+      <button onclick="uploadFile()" id="upload-btn">อัพโหลด</button>
+    </div>
+    <div id="upload-msg"></div>
+  </div>
+</div>
+
+<!-- INGEST TAB -->
+<div id="tab-ingest" class="panel">
+  <div class="card">
+    <p style="font-size:14px;color:#666;margin-bottom:16px">กดปุ่มด้านล่างเพื่อให้ LLM ประมวลผลไฟล์ทั้งหมดใน inbox และสร้าง/อัพเดต wiki pages</p>
+    <button onclick="triggerIngest()" id="ingest-btn">ประมวลผล Inbox ทั้งหมด</button>
+    <div id="ingest-msg"></div>
+    <div id="ingest-results" class="ingest-result" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<!-- CHAT TAB -->
+<div id="tab-chat" class="panel">
+  <div class="card">
+    <div class="filter-row">
+      <span>Filter by author:</span>
+      <input type="text" id="author-filter" placeholder="เช่น สมชาย (ว่างเปล่า = ทุกคน)" />
+      <button class="secondary" onclick="clearChat()">🗑 Clear chat</button>
+    </div>
+    <div class="chat-messages" id="chat-messages"></div>
+    <div class="chat-input-row">
+      <input type="text" id="chat-input" placeholder="ถามเกี่ยวกับ note เช่น ลูกค้า SCB ต้องการอะไร?" onkeydown="if(event.key==='Enter') sendChat()" />
+      <button onclick="sendChat()" id="chat-btn">ส่ง</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function clearChat() {
+  document.getElementById('chat-messages').innerHTML = '';
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['upload','ingest','chat'][i]===name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+// drag & drop
+const dz = document.getElementById('drop-zone');
+const fi = document.getElementById('file-input');
+let selectedFile = null;
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0]; if(f) setFile(f);
+});
+fi.addEventListener('change', () => { if(fi.files[0]) setFile(fi.files[0]); });
+function setFile(f) {
+  selectedFile = f;
+  document.getElementById('file-name').textContent = f.name;
+}
+
+async function uploadFile() {
+  const author = document.getElementById('author').value.trim();
+  if (!author) { showMsg('upload-msg', 'กรุณาระบุชื่อผู้เขียน', 'error'); return; }
+  if (!selectedFile) { showMsg('upload-msg', 'กรุณาเลือกไฟล์', 'error'); return; }
+  const btn = document.getElementById('upload-btn');
+  btn.disabled = true; btn.textContent = 'กำลังอัพโหลด...';
+  const fd = new FormData();
+  fd.append('file', selectedFile);
+  fd.append('author', author);
+  try {
+    const res = await fetch('/upload', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (res.ok) showMsg('upload-msg', `อัพโหลดสำเร็จ: ${data.filename}`, 'success');
+    else showMsg('upload-msg', data.detail || 'เกิดข้อผิดพลาด', 'error');
+  } catch(e) { showMsg('upload-msg', e.message, 'error'); }
+  btn.disabled = false; btn.textContent = 'อัพโหลด';
+}
+
+async function triggerIngest() {
+  const btn = document.getElementById('ingest-btn');
+  btn.disabled = true; btn.textContent = 'กำลังประมวลผล...';
+  const msgEl = document.getElementById('ingest-msg');
+  const resultsEl = document.getElementById('ingest-results');
+  msgEl.className = 'msg info'; msgEl.textContent = 'เริ่มต้นประมวลผล...';
+  resultsEl.innerHTML = '';
+
+  const es = new EventSource('/ingest/stream');
+  es.onmessage = (e) => {
+    if (e.data === '__DONE__') {
+      es.close();
+      msgEl.className = 'msg success'; msgEl.textContent = 'ประมวลผลเสร็จสิ้น ✅';
+      btn.disabled = false; btn.textContent = 'ประมวลผล Inbox ทั้งหมด';
+      return;
+    }
+    const line = document.createElement('div');
+    line.className = 'ingest-line';
+    line.textContent = e.data;
+    resultsEl.appendChild(line);
+    resultsEl.scrollTop = resultsEl.scrollHeight;
+  };
+  es.onerror = () => {
+    es.close();
+    msgEl.className = 'msg error'; msgEl.textContent = 'เกิดข้อผิดพลาด';
+    btn.disabled = false; btn.textContent = 'ประมวลผล Inbox ทั้งหมด';
+  };
+}
+
+function appendBubble(role, text, sources) {
+  const wrap = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'bubble ' + role;
+  div.innerHTML = `<div class="text">${text.replace(/</g,'&lt;')}</div>`;
+  if (sources && sources.length) {
+    const s = document.createElement('div');
+    s.className = 'sources';
+    s.innerHTML = 'Sources: ' + sources.map(x => `<span>${x}</span>`).join('');
+    div.appendChild(s);
+  }
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const q = input.value.trim();
+  if (!q) return;
+  const author = document.getElementById('author-filter').value.trim();
+  appendBubble('user', q);
+  input.value = '';
+  const btn = document.getElementById('chat-btn');
+  btn.disabled = true;
+  appendBubble('assistant', '...');
+  try {
+    const res = await fetch('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: q, author_filter: author || null })
+    });
+    const data = await res.json();
+    document.querySelector('.bubble.assistant:last-child').remove();
+    if (res.ok) appendBubble('assistant', data.answer, data.sources);
+    else appendBubble('assistant', 'Error: ' + (data.detail || 'เกิดข้อผิดพลาด'));
+  } catch(e) {
+    document.querySelector('.bubble.assistant:last-child').remove();
+    appendBubble('assistant', 'Error: ' + e.message);
+  }
+  btn.disabled = false;
+}
+
+function showMsg(id, text, type) {
+  const el = document.getElementById(id);
+  el.className = 'msg ' + type;
+  el.textContent = text;
+}
+</script>
+</body>
+</html>
