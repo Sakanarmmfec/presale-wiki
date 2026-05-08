@@ -37,10 +37,21 @@ async def oauth_login():
 @app.get("/oauth/callback")
 async def oauth_callback(request: Request):
     flow = get_oauth_flow(f"{BASE_URL}/oauth/callback")
-    flow.fetch_token(code=request.query_params.get("code"))
+    flow.fetch_token(authorization_response=str(request.url))
     creds = flow.credentials
+    token_json = creds.to_json()
     with open(TOKEN_FILE, "w") as f:
-        f.write(creds.to_json())
+        f.write(token_json)
+    # auto-update Render env var
+    render_api_key = os.environ.get("RENDER_API_KEY")
+    render_service_id = os.environ.get("RENDER_SERVICE_ID")
+    if render_api_key and render_service_id:
+        import httpx as _httpx
+        _httpx.put(
+            f"https://api.render.com/v1/services/{render_service_id}/env-vars",
+            headers={"Authorization": f"Bearer {render_api_key}", "Content-Type": "application/json"},
+            json=[{"key": "GOOGLE_OAUTH_TOKEN_JSON", "value": token_json}],
+        )
     return {"status": "authorized", "message": "Google Drive connected successfully!"}
 
 # ── Upload endpoint ──────────────────────────────────────────────
